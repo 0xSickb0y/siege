@@ -22,7 +22,7 @@ A CLI web fuzzer that takes a URL with a placeholder (like FUZZ), a wordlist fil
 ## Structure
 
 ```
-ruster/
+siege/
 ├── Cargo.toml
 └── src/
     ├── main.rs       - entry point, wires everything together
