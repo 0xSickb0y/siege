@@ -16,7 +16,7 @@
 ## Structure
 
 ```
-ruster/
+siege/
 ├── Cargo.toml
 └── src/
     ├── main.rs       - entry point, wires everything together
