@@ -1,8 +1,3 @@
-# Siege
-
-A CLI web fuzzer that takes a URL with a placeholder (like FUZZ), a wordlist file, and fires off concurrent HTTP requests — reporting back which URLs return interesting status codes.
-
-
 ## Architecture Overview
 
 ![alt text](assets/siege_architecture.svg)
