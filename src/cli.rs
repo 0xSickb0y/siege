@@ -20,7 +20,7 @@ pub struct Args {
 
 // add -> Result<Args, Error> later to the main function, for now just print to stderr and exit. 
 pub fn worker() -> Result<Args, String> {
-    let args = Args::parse();
+    let mut args = Args::parse();
 
     match validate_url(&args.url) {
         Ok(u) => u,
@@ -28,8 +28,13 @@ pub fn worker() -> Result<Args, String> {
     };
 
     match validate_wordlist(&args.wordlist) {
-        Ok(p) => p,
+        Ok(w) => w,
         Err(e) => return Err(e),
+    };
+
+    match args.wordlist.canonicalize() {
+        Ok(abs) => args.wordlist = abs,
+        Err(e) => return Err(e.to_string()),
     };
 
     return Ok(args)
@@ -63,11 +68,12 @@ fn validate_wordlist(wordlist_buf: &PathBuf) -> Result<&PathBuf, String> {
             return Err(format!("Wordlist path contains invalid UTF-8 characters: {:?}", wordlist_option))
         }
     };
-
+    
     if !wordlist_buf.exists() {
         return Err(format!("Path: '{}' does not exist", wordlist_path))
     } else if wordlist_buf.is_dir() {
         return Err(format!("Path: '{}' is a directory", wordlist_path))
     }
+    
     return Ok(wordlist_buf)
 }

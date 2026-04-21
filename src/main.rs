@@ -3,6 +3,7 @@ use crate::http::FuzzResult;
 
 mod cli;
 mod http;
+mod banner;
 mod output;
 mod wordlist;
 
@@ -17,6 +18,9 @@ async fn main() {
         }
     };
     
+    // PRINT BANNER
+    banner::print_banner(&args);
+
     // PROCCESS WORDLIST AND BUILD URL FOR FUZZING
     let url_vector = match wordlist::worker(&args.url, &args.wordlist) {
         Ok(wv) => wv,
@@ -37,7 +41,9 @@ async fn main() {
     };
 
     // DISPLAY OUTPUT AND RESULTS
-    output::worker(fuzz_results);
+    // TODO: find a way to print colorized requests as they go
+    // maintain current logic of saving results to save to output file later
+    // output::worker(fuzz_results);
 }
 
 

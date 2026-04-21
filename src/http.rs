@@ -1,6 +1,6 @@
 use reqwest::Client;
 use std::time::{Duration, Instant};
-
+use crate::output;
 
 pub struct FuzzResult {
     pub url:      String,   // URL to fetch
@@ -33,6 +33,7 @@ async fn fuzzer(url: String, client: &Client) -> Result<FuzzResult, reqwest::Err
         Err(e) => return Err(e),
     };
 
+    
     return Ok(response)
 }
 
@@ -44,11 +45,16 @@ async fn fetch(client: &Client, url: String) -> Result<FuzzResult, reqwest::Erro
         Err(e) => return Err(e),
     };
     let duration = start.elapsed();
-
     let status = response.status().as_u16();
     let size = response.content_length().unwrap_or(0);
+    
 
-    Ok(FuzzResult { url, status, size, duration })
+    // println!("{} {}", response.status().to_string().green(), response.url().to_string().green());
+    let result = FuzzResult { url, status, size, duration };
+    output::print_results(&result);
+    
+    
+    return Ok(result)
 }
 
 fn build_client(timeout: u64) -> Result<Client, reqwest::Error> {
