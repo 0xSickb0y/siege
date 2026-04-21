@@ -17,11 +17,12 @@ pub fn load_wordlist(url: &String, wordlist: &Path) -> Result<Vec<String>, Error
             Err(e) => return Err(e),
         };
 
-        if !line.starts_with("#") {
+        if !line.starts_with('#') && !line.is_empty() {
             wordlist_vector.push(line);
         }
     };
 
+    // TODO: add this logic to runner.rs later
     let url_vector: Vec<String> = wordlist_vector
         .iter()
         .map(|word| build_url(url, word))

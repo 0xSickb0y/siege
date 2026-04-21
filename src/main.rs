@@ -1,9 +1,11 @@
 use std::process::exit;
 
 mod cli;
+mod http;
 mod wordlist;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = match cli::parse_args() {
         Ok(a) => a,
         Err(e) => {
@@ -12,13 +14,17 @@ fn main() {
         }
     };
     
-    let wordlist_vector = match wordlist::load_wordlist(&args.url, &args.wordlist) {
+    let url_vector = match wordlist::load_wordlist(&args.url, &args.wordlist) {
         Ok(wv) => wv,
         Err(e) => {
             eprintln!("{}", e);
             exit(1)
         }
     };
+
+    for url in url_vector {
+        http::fuzzer(url).await;
+    }
 }
 
 
