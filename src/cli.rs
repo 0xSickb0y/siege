@@ -19,7 +19,7 @@ pub struct Args {
 }
 
 // add -> Result<Args, Error> later to the main function, for now just print to stderr and exit. 
-pub fn parse_args() -> Result<Args, String> {
+pub fn worker() -> Result<Args, String> {
     let args = Args::parse();
 
     match validate_url(&args.url) {

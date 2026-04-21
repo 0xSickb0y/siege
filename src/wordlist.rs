@@ -3,7 +3,7 @@ use std::path::Path;
 use std::io::{BufRead, BufReader, Error};
 
 
-pub fn load_wordlist(url: &String, wordlist: &Path) -> Result<Vec<String>, Error> {
+pub fn worker(url: &String, wordlist: &Path) -> Result<Vec<String>, Error> {
     let file =  match File::open(wordlist) {
         Ok(f) => f,
         Err(e) => return Err(e), 
