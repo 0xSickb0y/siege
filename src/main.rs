@@ -22,7 +22,7 @@ async fn main() {
     banner::print_banner(&args);
 
     // PROCCESS WORDLIST AND BUILD URL FOR FUZZING
-    let url_vector = match wordlist::worker(&args.url, &args.wordlist) {
+    let url_hashmap = match wordlist::worker(&args.url, &args.wordlist) {
         Ok(wv) => wv,
         Err(e) => {
             eprintln!("{}", e);
@@ -32,7 +32,7 @@ async fn main() {
 
 
     // HTTP REQUESTS
-    let fuzz_results: Vec<FuzzResult> = match http::worker(url_vector, args.timeout).await {
+    let fuzz_results: Vec<FuzzResult> = match http::worker(url_hashmap, args.timeout).await {
         Ok(fr) => fr,
         Err(e) => {
             eprintln!("{}", e);
