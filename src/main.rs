@@ -9,6 +9,9 @@ mod wordlist;
 
 #[tokio::main]
 async fn main() {
+    // PRINT BANNER
+    banner::print_banner();
+
     // ARGUMENT PARSING
     let args = match cli::worker() {
         Ok(a) => a,
@@ -17,9 +20,10 @@ async fn main() {
             exit(1)
         }
     };
+
+    // PRINT ARGS INFO
+    banner::print_args(&args);
     
-    // PRINT BANNER
-    banner::print_banner(&args);
 
     // PROCCESS WORDLIST AND BUILD URL FOR FUZZING
     let url_hashmap = match wordlist::worker(&args.url, &args.wordlist) {
@@ -41,9 +45,7 @@ async fn main() {
     };
 
     // DISPLAY OUTPUT AND RESULTS
-    // TODO: find a way to print colorized requests as they go
-    // maintain current logic of saving results to save to output file later
-    // output::worker(fuzz_results);
+    output::worker(fuzz_results);
 }
 
 

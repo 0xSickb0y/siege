@@ -8,12 +8,8 @@ pub fn worker(fuzz_results: Vec<FuzzResult>) {
 }
 
 pub fn print_results(result: &FuzzResult) {
-    let line = format!(
-        "/{:<20} [Status: {}, Size: {}, Duration: {}ms]",
-        result.word, result.status, result.size, result.duration.as_millis()
-    );
-
-    let colorized = match result.status {
+    let line = format!("/{:<20} Status: {}",result.word, result.status);
+    let word_and_status = match result.status {
         200       => line.green(),
         301 | 302 => line.blue(),
         401 | 403 => line.yellow(),
@@ -21,5 +17,6 @@ pub fn print_results(result: &FuzzResult) {
         _         => return,
     };
 
-    println!("{}", colorized);
+    println!("[{}] - [Size: {:>5} bytes  |  Duration: {:>5}ms] - {}", 
+    word_and_status, result.size, result.duration.as_millis(), result.url);
 }
