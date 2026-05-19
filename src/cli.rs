@@ -1,79 +1,166 @@
-//  TODO: Implement THREADS and filtering later
-
+use url::Url;
 use clap::Parser;
-use url::{Url, ParseError};
-use std::{fmt::Debug, path::PathBuf};
+use std::{fmt::Debug, path::PathBuf, fs::File};
+
 
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[arg(short, long)]
-    pub url: String,            // http://target:80/FUZZ
-    #[arg(short, long)]
-    pub wordlist: PathBuf,      // /opt/wordlists/file.txt
-    #[arg(long = "mc", default_values_t = [200u16,204,301,302,307,401,403,405,500])] // explicit u16 anotation on first, inferred after
+    #[arg(
+        short = 'b',
+        long = "banner",
+        default_value_t = false,
+        help = "Suppress banner on startup"
+    )]
+    pub banner: bool,
+
+
+    // ongoing
+    #[arg(
+        short = 'o',
+        long,
+        default_value_t = String::from("console"),
+        value_parser = validate_output,
+        help = "Save results to file <CSV> <JSON> <CONSOLE>"
+    )]
+    pub output: String,
+
+
+    #[arg(
+        short = 's', 
+        long = "status-codes", 
+        default_values_t = [200u16,204,301,302,307,401,403,405,500]
+    )]
     pub status_codes: Vec<u16>,
-    #[arg(short, long, default_value_t = 10)]
-    pub threads: usize,         // Concurrency level
-    #[arg(long, default_value_t = 5)]
-    pub timeout: u64,           // Request timeout in seconds
+
+
+    #[arg(
+        short = 't',
+        long, default_value_t = 10
+    )]
+    pub threads: usize,
+
+
+    #[arg(
+        short = 'u', 
+        long, 
+        value_parser = validate_url,
+        required_unless_present = "version"
+    )]
+    pub url: Option<String>,
+
+    // TODO: implement
+    #[arg(
+        short = 'v',
+        long = "verbose",
+        default_value_t = false,
+        help = "Enable verbosity"
+    )]
+    pub verbose: bool,
+
+
+    #[arg (
+        long = "version",
+        default_value_t = false,
+        help = "Show version information"
+    )]
+    pub version: bool,
+
+    #[arg(
+        short = 'w',
+        long,
+        value_parser = validate_wordlist,
+        required_unless_present = "version"
+    )]
+    pub wordlist: Option<PathBuf>,
+
+
+    #[arg(
+        short = 'z',
+        long, default_value_t = 5,
+        value_parser = validate_timeout,
+        help = "Request timeout in seconds"
+    )]
+    pub timeout: usize,
 }
 
-// add -> Result<Args, Error> later to the main function, for now just print to stderr and exit. 
+
 pub fn worker() -> Result<Args, String> {
     let mut args = Args::parse();
 
-    match validate_url(&args.url) {
-        Ok(u) => u,
-        Err(e) => return Err(e),
+
+    if args.version {
+        return Ok(args)
     };
 
-    match validate_wordlist(&args.wordlist) {
-        Ok(w) => w,
-        Err(e) => return Err(e),
-    };
 
-    match args.wordlist.canonicalize() {
-        Ok(abs) => args.wordlist = abs,
-        Err(e) => return Err(e.to_string()),
-    };
+    // Get value from input and turn into absolute path, if possible. This is done to avoid issues with relative paths later on.
+    match &args.wordlist {
+        Some(w) => {
+            match w.canonicalize() {
+                Ok(abs) => args.wordlist = Some(abs),
+                Err(e)  => return Err(e.to_string()),
+            };
+        },
+        None => unreachable!(), // This should never happen due to clap's required_unless_present
+    }  
 
     return Ok(args)
 }
 
 
-fn validate_url(url: &String) -> Result<Url, String> {    
-    let url_result: Result<Url, ParseError> = Url::parse(url.as_str());
-    let url_struct = match url_result {
-        Ok(u) => u,
-        Err(e) => {
-            return Err(format!("Invalid URL '{url}': {e}"))
-        },
+fn validate_url(url: &str) -> Result<String, String> {
+    let url_struct = match Url::parse(url) {
+        Ok(u)  => u,
+        Err(e) => return Err(format!("Invalid URL ({e})")),
     };
 
-    let url_path = url_struct.path();
     if !url_struct.path().contains("FUZZ") {
-        return Err(format!("Missing 'FUZZ' placeholder in path: '{}'", url_path))
-    };
+        return Err("Missing FUZZ placeholder".to_string())
+    }
 
-    return Ok(url_struct)
 
+    return Ok(url.to_string())
 }
 
 
-fn validate_wordlist(wordlist_buf: &PathBuf) -> Result<&PathBuf, String> {
-    let wordlist_option = wordlist_buf.to_str(); // returns 'None' if 'PathBuf' contains invalid UTF-8 chars    
-    let wordlist_path = match wordlist_option {
-        Some(p) => p,
-        None => {
-            return Err(format!("Wordlist path contains invalid UTF-8 characters: {:?}", wordlist_option))
-        }
-    };
-    
-    if !wordlist_buf.exists() {
-        return Err(format!("Path: '{}' does not exist", wordlist_path))
-    } else if wordlist_buf.is_dir() {
-        return Err(format!("Path: '{}' is a directory", wordlist_path))
+fn validate_wordlist(path: &str) -> Result<PathBuf, String> {
+    let buf = PathBuf::from(path);
+
+    match buf.try_exists() {
+        Ok(true)  => {},
+        Ok(false) => return Err("Path does not exist".to_string()),
+        Err(e)    => return Err(format!("Path could not be accessed ({})", e)),
     }
-    
-    return Ok(wordlist_buf)
+
+    if buf.is_dir() {
+        return Err(format!("'{}' Is a directory", path))
+    }
+
+    if let Err(e) = File::open(&buf) {
+        return Err(format!("Path is not readable ({})", e))
+    }
+
+
+    return Ok(buf)
+}
+
+
+fn validate_timeout(string: &str) -> Result<usize, String> {
+    match string.parse::<usize>() {
+        Ok(0)  => Err("Must be at least 1".to_string()),
+        Ok(n)  => Ok(n),
+        Err(_) => Err("Fractional values not supported".to_string()),
+    }
+}
+
+
+fn validate_output(string: &str) -> Result<String, String> {
+    let s_lowercase = string.to_lowercase();
+    let valid_options = ["csv", "json", "console"];
+
+    if !valid_options.contains(&s_lowercase.as_str()) {
+        return Err(format!("Invalid output mode. Valid options are: {}", valid_options.join(", ")))
+    }
+
+    return Ok(s_lowercase)
 }

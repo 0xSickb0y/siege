@@ -1,15 +1,32 @@
 use clap;
-use crate::cli::Args;
+use std::process::exit;
+use crate::{cli::Args};
 
-// TODO: find a better banner
-pub fn print_banner(){
+
+const CRATE_NAME: &str = clap::crate_name!();
+const CRATE_VERSION: &str = clap::crate_version!();
+const GITHUB_URL: &str = "https://github.com/0xSickb0y/siege/";
+
+
+pub fn worker(args: &Args) {
+  if args.version {
+    println!("{} v{} - {}", CRATE_NAME, CRATE_VERSION, GITHUB_URL);
+    exit(0);
+  }
   
-  let name = clap::crate_name!();
-  let version = format!("v{}", clap::crate_version!());
-  let github = "https://github.com/0xSickb0y/siege/";
+  // Safe use of unwrap() due to clap's 'required_unless_present' and CLI validation
+  let url      = args.url.as_ref().unwrap(); 
+  let wordlist = args.wordlist.as_ref().unwrap();
 
 
-  print!(r#"
+  if !args.banner {
+    print_banner_and_info(args, &url, &wordlist);
+  }
+}
+
+
+fn print_banner_and_info(args: &Args, url: &String, wordlist: &std::path::PathBuf) {
+  println!(r#"
   ▄████████  ▄█     ▄████████    ▄██████▄     ▄████████
   ███    ███ ███    ███    ███   ███    ███   ███    ███
   ███    █▀  ███▌   ███    █▀    ███    █▀    ███    █▀ 
@@ -19,23 +36,22 @@ pub fn print_banner(){
   ▄█    ███ ███    ███    ███   ███    ███   ███    ███
   ▄████████▀  █▀     ██████████   ████████▀    ██████████
 
-  [{name} - {version} - {github}]
-"#
+  [{CRATE_NAME} - {CRATE_VERSION} - {GITHUB_URL}]
+    "#
   );
-}
 
-pub fn print_args(args: &Args) {
-  println!(r#"
+
+    println!(r#"
 [URL]          - {}
 [WORDLIST]     - {}
 [STATUS CODES] - {:?}
 [THREADS]      - {}
 [TIMEOUT]      - {} 
   "#, 
-  args.url,
-  args.wordlist.to_string_lossy(),
-  args.status_codes,
-  args.threads,
-  args.timeout,
-  );
+      url,
+      wordlist.to_string_lossy(),
+      args.status_codes,
+      args.threads,
+      args.timeout,
+    );
 }

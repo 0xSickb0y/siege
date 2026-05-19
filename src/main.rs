@@ -1,17 +1,21 @@
+// TODO: add custom error formating for runtime execution
+// currently just prints raw:
+//
+// Permission denied (os error 13)
+
+
 use std::process::exit;
 use crate::http::FuzzResult;
 
 mod cli;
 mod http;
-mod banner;
+mod info;
 mod output;
 mod wordlist;
 
 #[tokio::main]
 async fn main() {
-    // PRINT BANNER
-    banner::print_banner();
-
+    
     // ARGUMENT PARSING
     let args = match cli::worker() {
         Ok(a) => a,
@@ -21,13 +25,14 @@ async fn main() {
         }
     };
 
-    // PRINT ARGS INFO
-    banner::print_args(&args);
-    
 
-    // PROCCESS WORDLIST AND BUILD URL FOR FUZZING
-    let url_hashmap = match wordlist::worker(&args.url, &args.wordlist) {
-        Ok(wv) => wv,
+    // PRINT BANNER, VERSION AND ARGS INFO
+    info::worker(&args);
+
+
+    // PROCCESS URL AND WORDLIST FOR FUZZING
+    let url_hashmap = match wordlist::worker(args.url.as_ref().unwrap(), args.wordlist.as_ref().unwrap()) { // Safe use of unwrap() due to clap's 'required_unless_present' and CLI validation
+        Ok(uh) => uh,
         Err(e) => {
             eprintln!("{}", e);
             exit(1)
