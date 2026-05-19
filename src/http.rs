@@ -1,8 +1,10 @@
 use reqwest;
+use serde::Serialize;
 use crate::output;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+#[derive(Serialize)]
 pub struct FuzzResult {
     pub url:      String,   // URL to fetch
     pub size:     u64,      // response body size in bytes
@@ -12,17 +14,18 @@ pub struct FuzzResult {
 }
 
 
-pub async fn worker(url_hashmap: HashMap<String, String>, timeout: usize) -> Result<Vec<FuzzResult>, reqwest::Error> {
+pub async fn worker(url_hashmap: HashMap<String, String>, timeout: usize, status_codes: &Vec<u16>) -> Result<Vec<FuzzResult>, reqwest::Error> {
     let client = match build_client(timeout) {
         Ok(c) => c,
         Err(e) => return Err(e),
     };
     
-    
     let mut fuzz_results = vec![];
     for (url, word) in url_hashmap.iter() {
         match fuzzer(&url, &word, &client).await {
-            Ok(fr) => fuzz_results.push(fr),
+            Ok(fr) => if status_codes.contains(&fr.status) { 
+                fuzz_results.push(fr)
+            },
             Err(e) => eprintln!("Request failed: {e:?}"),
         };
     };
@@ -30,14 +33,15 @@ pub async fn worker(url_hashmap: HashMap<String, String>, timeout: usize) -> Res
     return Ok(fuzz_results)
 }
 
+
 async fn fuzzer(url: &String, word: &String, client: &reqwest::Client) -> Result<FuzzResult, reqwest::Error> {   
-    let response = match fetch(url.to_owned(), word.to_owned(), client).await {
+    let result = match fetch(url.to_owned(), word.to_owned(), client).await {
         Ok(r) => r,
         Err(e) => return Err(e),
     };
 
     
-    return Ok(response)
+    return Ok(result)
 }
 
 
@@ -52,9 +56,8 @@ async fn fetch(url: String, word: String, client: &reqwest::Client) -> Result<Fu
     let size = response.content_length().unwrap_or(0);
     
 
-    // println!("{} {}", response.status().to_string().green(), response.url().to_string().green());
     let result = FuzzResult { url, status, word, size, duration };
-    output::print_results(&result);
+    output::print_results_to_console(&result); // Save silent for -q later and supress here
     
     
     return Ok(result)

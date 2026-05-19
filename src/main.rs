@@ -3,15 +3,21 @@
 //
 // Permission denied (os error 13)
 
-
+use clap;
 use std::process::exit;
 use crate::http::FuzzResult;
+
 
 mod cli;
 mod http;
 mod info;
 mod output;
 mod wordlist;
+
+
+const CRATE_NAME: &str = clap::crate_name!();
+const CRATE_VERSION: &str = clap::crate_version!();
+const GITHUB_URL: &str = "https://github.com/0xSickb0y/siege/";
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +33,7 @@ async fn main() {
 
 
     // PRINT BANNER, VERSION AND ARGS INFO
-    info::worker(&args);
+    info::worker(&args, CRATE_NAME, CRATE_VERSION, GITHUB_URL);
 
 
     // PROCCESS URL AND WORDLIST FOR FUZZING
@@ -41,7 +47,7 @@ async fn main() {
 
 
     // HTTP REQUESTS
-    let fuzz_results: Vec<FuzzResult> = match http::worker(url_hashmap, args.timeout).await {
+    let fuzz_results: Vec<FuzzResult> = match http::worker(url_hashmap, args.timeout, &args.status_codes).await {
         Ok(fr) => fr,
         Err(e) => {
             eprintln!("{}", e);
@@ -49,8 +55,14 @@ async fn main() {
         }
     };
 
-    // DISPLAY OUTPUT AND RESULTS
-    output::worker(fuzz_results);
+    // DISPLAY OUTPUT AND SAVE RESULTS
+    match output::worker(&args, fuzz_results) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(1)
+        }
+    };
 }
 
 

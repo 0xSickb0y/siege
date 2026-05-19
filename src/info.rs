@@ -1,16 +1,10 @@
-use clap;
 use std::process::exit;
 use crate::{cli::Args};
 
 
-const CRATE_NAME: &str = clap::crate_name!();
-const CRATE_VERSION: &str = clap::crate_version!();
-const GITHUB_URL: &str = "https://github.com/0xSickb0y/siege/";
-
-
-pub fn worker(args: &Args) {
+pub fn worker(args: &Args, crate_name: &str, crate_version: &str, github_url: &str) {
   if args.version {
-    println!("{} v{} - {}", CRATE_NAME, CRATE_VERSION, GITHUB_URL);
+    println!("{} v{} - {}", crate_name, crate_version, github_url);
     exit(0);
   }
   
@@ -20,12 +14,12 @@ pub fn worker(args: &Args) {
 
 
   if !args.banner {
-    print_banner_and_info(args, &url, &wordlist);
+    print_banner_and_info(args, &url, &wordlist, crate_name, crate_version, github_url);
   }
 }
 
 
-fn print_banner_and_info(args: &Args, url: &String, wordlist: &std::path::PathBuf) {
+fn print_banner_and_info(args: &Args, url: &String, wordlist: &std::path::PathBuf, crate_name: &str, crate_version: &str, github_url: &str) {
   println!(r#"
   ▄████████  ▄█     ▄████████    ▄██████▄     ▄████████
   ███    ███ ███    ███    ███   ███    ███   ███    ███
@@ -36,7 +30,7 @@ fn print_banner_and_info(args: &Args, url: &String, wordlist: &std::path::PathBu
   ▄█    ███ ███    ███    ███   ███    ███   ███    ███
   ▄████████▀  █▀     ██████████   ████████▀    ██████████
 
-  [{CRATE_NAME} - {CRATE_VERSION} - {GITHUB_URL}]
+  [{crate_name} - {crate_version} - {github_url}]
     "#
   );
 

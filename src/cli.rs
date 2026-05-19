@@ -18,11 +18,10 @@ pub struct Args {
     #[arg(
         short = 'o',
         long,
-        default_value_t = String::from("console"),
         value_parser = validate_output,
-        help = "Save results to file <CSV> <JSON> <CONSOLE>"
+        help = "Save results to file <CSV> <JSON>"
     )]
-    pub output: String,
+    pub output: Option<String>,
 
 
     #[arg(
@@ -49,13 +48,13 @@ pub struct Args {
     pub url: Option<String>,
 
     // TODO: implement
-    #[arg(
-        short = 'v',
-        long = "verbose",
-        default_value_t = false,
-        help = "Enable verbosity"
-    )]
-    pub verbose: bool,
+    // #[arg(
+    //     short = 'v',
+    //     long = "verbose",
+    //     default_value_t = false,
+    //     help = "Enable verbosity"
+    // )]
+    // pub verbose: bool,
 
 
     #[arg (
@@ -156,7 +155,7 @@ fn validate_timeout(string: &str) -> Result<usize, String> {
 
 fn validate_output(string: &str) -> Result<String, String> {
     let s_lowercase = string.to_lowercase();
-    let valid_options = ["csv", "json", "console"];
+    let valid_options = ["csv", "json"];
 
     if !valid_options.contains(&s_lowercase.as_str()) {
         return Err(format!("Invalid output mode. Valid options are: {}", valid_options.join(", ")))
